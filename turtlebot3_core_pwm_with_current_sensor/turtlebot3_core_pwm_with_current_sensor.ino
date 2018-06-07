@@ -641,8 +641,8 @@ bool updateCurrent(double diff_time)
 
 void updateSensorValue(void)
 {
-  last_measured_current = analogRead(A2);
-  sensor_value.data = last_measured_current*1.0;//(last_measured_current/1024.0-2.5)*5.0/2.0;
+  last_measured_current = analogRead(A0);
+  sensor_value.data = ((last_measured_current*3.3/1023.0)-2.5)*5.0/2.0;
 }
 
 bool updateDisturbanceTorque(double diff_time)
