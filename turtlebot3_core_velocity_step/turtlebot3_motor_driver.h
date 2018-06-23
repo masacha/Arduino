@@ -29,6 +29,7 @@
 #define ADDR_X_REALTIME_TICK            120
 #define ADDR_X_PRESENT_VELOCITY         128
 #define ADDR_X_PRESENT_POSITION         132
+#define ADDR_X_OPERATING_MODE           11
 
 // Limit values (XM430-W210-T)
 #define LIMIT_X_MAX_VELOCITY            240
@@ -36,6 +37,7 @@
 // Data Byte Length
 #define LEN_X_GOAL_PWM                  2
 #define LEN_X_TORQUE_ENABLE             1
+#define LEN_X_OPERATING_MODE            1
 #define LEN_X_GOAL_VELOCITY             4
 #define LEN_X_GOAL_POSITION             4
 #define LEN_X_REALTIME_TICK             2
@@ -60,8 +62,11 @@ class Turtlebot3MotorDriver
   bool init(void);
   void closeDynamixel(void);
   bool setTorque(uint8_t id, bool onoff);
+  bool setOperatingMode(uint8_t id, uint8_t modevalue);
   bool readEncoder(int32_t &left_value, int32_t &right_value);
   bool pwmControl(int64_t left_wheel_value, int64_t right_wheel_value);
+  bool lmao(void);
+
 
  private:
   uint32_t baudrate_;

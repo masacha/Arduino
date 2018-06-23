@@ -18,6 +18,8 @@
 
 #include "turtlebot3_motor_driver.h"
 
+bool success = false;
+
 Turtlebot3MotorDriver::Turtlebot3MotorDriver()
 : baudrate_(BAUDRATE),
   protocol_version_(PROTOCOL_VERSION),
@@ -62,6 +64,9 @@ bool Turtlebot3MotorDriver::init(void)
     return false;
   }
 
+  setOperatingMode(left_wheel_id_, 16);
+  setOperatingMode(right_wheel_id_, 16);
+
   // Enable Dynamixel Torque
   setTorque(left_wheel_id_, true);
   setTorque(right_wheel_id_, true);
@@ -70,6 +75,26 @@ bool Turtlebot3MotorDriver::init(void)
   groupSyncReadEncoder_   = new dynamixel::GroupSyncRead(portHandler_, packetHandler_, ADDR_X_PRESENT_POSITION, LEN_X_PRESENT_POSITION);
 
   return true;
+}
+
+bool Turtlebot3MotorDriver::setOperatingMode(uint8_t id, uint8_t modevalue)
+{
+  uint8_t dxl_error = 0;
+  int dxl_comm_result = COMM_TX_FAIL;
+
+  dxl_comm_result = packetHandler_->write1ByteTxRx(portHandler_, id, ADDR_X_OPERATING_MODE, modevalue, &dxl_error);
+  if(dxl_comm_result != COMM_SUCCESS)
+  {
+    packetHandler_->printTxRxResult(dxl_comm_result);
+  }
+//  else if ((dxl_comm_result == COMM_SUCCESS))
+//  {
+//    success = true;
+//  }
+  else if(dxl_error != 0)
+  {
+    packetHandler_->printRxPacketError(dxl_error);
+  }
 }
 
 bool Turtlebot3MotorDriver::setTorque(uint8_t id, bool onoff)
@@ -87,6 +112,11 @@ bool Turtlebot3MotorDriver::setTorque(uint8_t id, bool onoff)
     packetHandler_->printRxPacketError(dxl_error);
   }
 }
+
+//bool Turtlebot3MotorDriver::lmao(void){
+//  return success;
+//}
+
 
 void Turtlebot3MotorDriver::closeDynamixel(void)
 {

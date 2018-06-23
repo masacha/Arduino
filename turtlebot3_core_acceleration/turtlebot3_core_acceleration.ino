@@ -26,8 +26,8 @@ ros::NodeHandle nh;
 /*******************************************************************************
 * Subscriber
 *******************************************************************************/
-ros::Subscriber<std_msgs::Int64> cmd_pwm_left_sub("cmd_pwm_left", commandPwmLeftCallback);
-ros::Subscriber<std_msgs::Int64> cmd_pwm_right_sub("cmd_pwm_right", commandPwmRightCallback);
+ros::Subscriber<std_msgs::Float64> cmd_linear_acceleration_sub("cmd_linear_acceleration", commandLinearAccelerationCallback);
+ros::Subscriber<std_msgs::Float64> cmd_angular_acceleration_sub("cmd_angular_acceleration", commandAngularAccelerationCallback);
 
 /*******************************************************************************
 * Publisher
@@ -45,6 +45,12 @@ ros::Publisher odom_pub("odom", &odom);
 
 sensor_msgs::JointState joint_states;
 ros::Publisher joint_states_pub("joint_states", &joint_states);
+
+//std_msgs::Float64 vellin;
+//ros::Publisher vellin_pub("robot_linear_velocity",&vellin);
+//
+//std_msgs::Float64 velang;
+//ros::Publisher velang_pub("robot_angular_velocity",&velang);
 
 std_msgs::Float64 raw_angular_velocity_left;
 ros::Publisher raw_angular_velocity_left_pub("raw_angular_velocity_left",&raw_angular_velocity_left);
@@ -64,18 +70,6 @@ ros::Publisher angular_acceleration_left_pub("angular_acceleration_left",&angula
 std_msgs::Float64 angular_acceleration_right;
 ros::Publisher angular_acceleration_right_pub("angular_acceleration_right",&angular_acceleration_right);
 
-std_msgs::Float64 motor_velocity_left;
-ros::Publisher motor_velocity_left_pub("motor_velocity_left",&motor_velocity_left);
-
-std_msgs::Float64 motor_velocity_right;
-ros::Publisher motor_velocity_right_pub("motor_velocity_right",&motor_velocity_right);
-
-std_msgs::Float64 current_left;
-ros::Publisher current_left_pub("current_left",&current_left);
-
-std_msgs::Float64 current_right;
-ros::Publisher current_right_pub("current_right",&current_right);
-
 std_msgs::Float64 disturbance_torque_left;
 ros::Publisher disturbance_torque_left_pub("disturbance_torque_left",&disturbance_torque_left);
 
@@ -91,11 +85,14 @@ ros::Publisher reaction_torque_right_pub("reaction_torque_right",&reaction_torqu
 std_msgs::Float64 reaction_force;
 ros::Publisher reaction_force_pub("reaction_force",&reaction_force);
 
-std_msgs::Float64 compensation_voltage_left;
-ros::Publisher compensation_voltage_left_pub("compensation_voltage_left",&compensation_voltage_left);
+std_msgs::Float64 reaction_torque;
+ros::Publisher reaction_torque_pub("reaction_torque",&reaction_torque);
 
-std_msgs::Float64 compensation_voltage_right;
-ros::Publisher compensation_voltage_right_pub("compensation_voltage_right",&compensation_voltage_right);
+std_msgs::Float64 compensation_current_left;
+ros::Publisher compensation_current_left_pub("compensation_current_left",&compensation_current_left);
+
+std_msgs::Float64 compensation_current_right;
+ros::Publisher compensation_current_right_pub("compensation_current_right",&compensation_current_right);
 
 std_msgs::Float64 motor_voltage_left;
 ros::Publisher motor_voltage_left_pub("motor_voltage_left",&motor_voltage_left);
@@ -105,6 +102,12 @@ ros::Publisher motor_voltage_right_pub("motor_voltage_right",&motor_voltage_righ
 
 std_msgs::Float64 yaw;
 ros::Publisher yaw_pub("yaw",&yaw);
+
+std_msgs::Float64 raw_sensor_value;
+ros::Publisher raw_sensor_value_pub("raw_sensor_value",&raw_sensor_value);
+
+std_msgs::Float64 filtered_sensor_value;
+ros::Publisher filtered_sensor_value_pub("filtered_sensor_value",&filtered_sensor_value);
 /*******************************************************************************
 * Transform Broadcaster
 *******************************************************************************/
@@ -125,27 +128,45 @@ Turtlebot3MotorDriver motor_driver;
 bool init_encoder_[2]  = {false, false};
 int32_t last_diff_tick_[2];
 int32_t last_tick_[2];
+double last_linear_velocity = 0.0;
+double last_angular_velocity = 0.0;
 double last_rad_[2];
 double last_velocity_[2];
 double last_velocity_filtered_[2];
-double motor_velocity_[2];
+double cmd_linear_acceleration = 0.0;
+double cmd_angular_acceleration = 0.0;
 int64_t goal_pwm_left  = 0;
 int64_t goal_pwm_right = 0;
-int64_t cmd_pwm_left  = 0;
-int64_t cmd_pwm_right = 0;
-double current_[2];
-double current_filtered_[2];
+double cmd_current_left  = 0.0;
+double cmd_current_right = 0.0;
 double motor_voltage_[2];
-double compensation_voltage_[2];
+double compensation_current_[2];
 double disturbance_torque_[2];
 double disturbance_torque_tmp_[2];
-double disturbance_torque_filtered_[2];
 double reaction_torque_[2];
 double reaction_torque_tmp_[2];
-double reaction_torque_filtered_[2];
 double mobile_robot_reaction_force;
+double mobile_robot_reaction_force_tmp;
+double mobile_robot_reaction_torque;
+double mobile_robot_reaction_torque_tmp;
 double acc_tmp_[2];
 double acc_filtered_[2];
+
+double cmd_acceleration_left = 0.0;
+double cmd_acceleration_right = 0.0;
+double err_left = 0.0;
+double err_right = 0.0;
+double err_int_left = 0.0;
+double err_int_right = 0.0;
+double err_der_left = 0.0;
+double err_der_right = 0.0;
+double pre_err_left = 0.0;
+double pre_err_right = 0.0;
+
+int64_t analogInPin;
+int64_t last_measured_current;
+double filtered_measured_current;
+unsigned long prev_time;
 
 /*******************************************************************************
 * Declaration for IMU
@@ -199,30 +220,33 @@ void setup()
   // Initialize ROS node handle, advertise and subscribe the topics
   nh.initNode();
   nh.getHardware()->setBaud(115200);
+  nh.subscribe(cmd_linear_acceleration_sub);
+  nh.subscribe(cmd_angular_acceleration_sub);
   nh.advertise(sensor_state_pub);
   nh.advertise(imu_pub);
   nh.advertise(odom_pub);
   nh.advertise(joint_states_pub);
-  nh.advertise(raw_angular_velocity_left_pub);
-  nh.advertise(raw_angular_velocity_right_pub);
+//  nh.advertise(vellin_pub);
+//  nh.advertise(velang_pub);
   nh.advertise(angular_velocity_left_pub);
   nh.advertise(angular_velocity_right_pub);
+  nh.advertise(raw_angular_velocity_left_pub);
+  nh.advertise(raw_angular_velocity_right_pub);
   nh.advertise(angular_acceleration_left_pub);
   nh.advertise(angular_acceleration_right_pub);
-  nh.advertise(motor_velocity_left_pub);
-  nh.advertise(motor_velocity_right_pub);
-  nh.advertise(current_left_pub);
-  nh.advertise(current_right_pub);
   nh.advertise(disturbance_torque_left_pub);
   nh.advertise(disturbance_torque_right_pub);
   nh.advertise(motor_voltage_left_pub);
   nh.advertise(motor_voltage_right_pub);
-  nh.advertise(compensation_voltage_left_pub);
-  nh.advertise(compensation_voltage_right_pub);
+  nh.advertise(compensation_current_left_pub);
+  nh.advertise(compensation_current_right_pub);
   nh.advertise(reaction_torque_left_pub);
   nh.advertise(reaction_torque_right_pub);
   nh.advertise(reaction_force_pub);
+  nh.advertise(reaction_torque_pub);
   nh.advertise(yaw_pub);
+  nh.advertise(raw_sensor_value_pub);
+  nh.advertise(filtered_sensor_value_pub);
   
   tfbroadcaster.init(nh);
 
@@ -248,31 +272,22 @@ void setup()
   acc_filtered_[LEFT] = 0.0;
   acc_filtered_[RIGHT] = 0.0;
 
-  motor_velocity_[LEFT]=0.0;
-  motor_velocity_[RIGHT]=0.0;
-
-  current_filtered_[LEFT] = 0.0;
-  current_filtered_[RIGHT] = 0.0;
-
   disturbance_torque_tmp_[LEFT] = 0.0;
   disturbance_torque_tmp_[RIGHT] = 0.0;
-  
-  disturbance_torque_filtered_[LEFT] = 0.0;
-  disturbance_torque_filtered_[RIGHT] = 0.0;
-
+ 
   reaction_torque_[LEFT] = 0.0;
   reaction_torque_[RIGHT] = 0.0;
 
   reaction_torque_tmp_[LEFT] = 0.0;
   reaction_torque_tmp_[RIGHT] = 0.0;
-  
-  reaction_torque_filtered_[LEFT] = 0.0;
-  reaction_torque_filtered_[RIGHT] = 0.0;
 
   mobile_robot_reaction_force = 0.0;
+  mobile_robot_reaction_force_tmp = 0.0;
+  mobile_robot_reaction_torque = 0.0;
+  mobile_robot_reaction_torque_tmp = 0.0;
 
-  compensation_voltage_[LEFT]=0.0;
-  compensation_voltage_[RIGHT]=0.0;
+  compensation_current_[LEFT]=0.0;
+  compensation_current_[RIGHT]=0.0;
 
   joint_states.header.frame_id = "base_footprint";
   joint_states.name            = joint_states_name;
@@ -283,6 +298,7 @@ void setup()
   joint_states.effort_length   = 2;
 
   prev_update_time = millis();
+  prev_time = millis();
 
   pinMode(13, OUTPUT);
 
@@ -291,17 +307,6 @@ void setup()
   setup_end = true;
 
   char log_msg2[50];
-  
-//  if (motor_driver.lmao())
-//  {
-//    sprintf(log_msg2, "Changing Operating Mode : Success");
-//    nh.loginfo(log_msg2);
-//  }
-//  else
-//  {
-//    sprintf(log_msg2, "Failed to Change Operating Mode");
-//    nh.loginfo(log_msg2);
-//  }
 }
 
 /*******************************************************************************
@@ -327,7 +332,7 @@ void loop()
     publishImuMsg();
     tTime[3] = millis();
   }
-  
+
   // Update the IMU unit
   imu.update();
 
@@ -350,6 +355,15 @@ void loop()
 /*******************************************************************************
 * Callback function for cmd_pwm msg
 *******************************************************************************/
+void commandLinearAccelerationCallback(const std_msgs::Float64& cmd_linear_acceleration_msg)
+{
+  cmd_linear_acceleration  = cmd_linear_acceleration_msg.data;
+}
+
+void commandAngularAccelerationCallback(const std_msgs::Float64& cmd_angular_acceleration_msg)
+{
+  cmd_angular_acceleration  = cmd_angular_acceleration_msg.data;
+}
 
 /*******************************************************************************
 * Publish msgs (IMU data: angular velocity, linear acceleration, orientation)
@@ -464,6 +478,24 @@ void publishSensorStateMsg(void)
   last_rad_[RIGHT] += TICK2RAD * (double)last_diff_tick_[RIGHT];
 }
 
+bool updateSensorValue(double diff_time)
+{
+  double step_time;
+
+  step_time = 0.0;
+
+  step_time = diff_time;
+
+  if (step_time == 0)
+    return false;
+
+  last_measured_current = analogRead(A0);
+  filtered_measured_current = G_SENSOR*step_time*last_measured_current+(1-G_SENSOR*step_time)*filtered_measured_current;
+  raw_sensor_value.data = -((last_measured_current*3.3/1023.0)-2.5)*5.0/2.0;
+  filtered_sensor_value.data = -((filtered_measured_current*3.3/1023.0)-2.5)*5.0/2.0;
+  return true;
+}
+
 /*******************************************************************************
 * Publish msgs (odometry, joint states, tf)
 *******************************************************************************/
@@ -481,26 +513,29 @@ void publishDriveInformation(void)
   yaw_pub.publish(&yaw);
 
   //velocity and acceleration
+//  vellin_pub.publish(&vellin);
+//  velang_pub.publish(&velang);
   raw_angular_velocity_left_pub.publish(&raw_angular_velocity_left);
   raw_angular_velocity_right_pub.publish(&raw_angular_velocity_right);
   angular_velocity_left_pub.publish(&angular_velocity_left);
   angular_velocity_right_pub.publish(&angular_velocity_right);
   angular_acceleration_left_pub.publish(&angular_acceleration_left);
   angular_acceleration_right_pub.publish(&angular_acceleration_right);
-  motor_velocity_left_pub.publish(&motor_velocity_left);
-  motor_velocity_right_pub.publish(&motor_velocity_right);
 
-  //current
-  updateCurrent((double)(step_time * 0.001));
-  current_left_pub.publish(&current_left);
-  current_right_pub.publish(&current_right);
+  unsigned long time_now_sensor = millis();
+  unsigned long step_time_sensor = time_now_sensor - prev_time;
+  prev_time = time_now_sensor;
+
+  updateSensorValue(step_time_sensor*0.001);
+  raw_sensor_value_pub.publish(&raw_sensor_value);
+  filtered_sensor_value_pub.publish(&filtered_sensor_value);
 
   //disturbance_torque
   updateDisturbanceTorque((double)(step_time * 0.001));
   disturbance_torque_left_pub.publish(&disturbance_torque_left);
   disturbance_torque_right_pub.publish(&disturbance_torque_right);
-  compensation_voltage_left_pub.publish(&compensation_voltage_left);
-  compensation_voltage_right_pub.publish(&compensation_voltage_right);
+  compensation_current_left_pub.publish(&compensation_current_left);
+  compensation_current_right_pub.publish(&compensation_current_right);
 
   motor_voltage_left_pub.publish(&motor_voltage_left);
   motor_voltage_right_pub.publish(&motor_voltage_right);
@@ -509,17 +544,21 @@ void publishDriveInformation(void)
   updateReactionTorque((double)(step_time * 0.001));
   reaction_torque_left_pub.publish(&reaction_torque_left);
   reaction_torque_right_pub.publish(&reaction_torque_right);
-  updateReactionForce();
+  updateReactionForce(step_time * 0.001);
   reaction_force_pub.publish(&reaction_force);
+  reaction_torque_pub.publish(&reaction_torque);
   
   // joint_states
   updateJoint();
   joint_states.header.stamp = stamp_now;
   joint_states_pub.publish(&joint_states);
 
-  // tf
+  // tff
   updateTF(odom_tf);
   tfbroadcaster.sendTransform(odom_tf);
+
+  //Acceleration Control
+  controlAcceleration(step_time*0.001);
 }
 
 /*******************************************************************************
@@ -587,21 +626,20 @@ bool updateOdometry(double diff_time)
 
   last_theta = atan2f(imu.quat[1]*imu.quat[2] + imu.quat[0]*imu.quat[3],
                       0.5f - imu.quat[2]*imu.quat[2] - imu.quat[3]*imu.quat[3]);
+
+  last_linear_velocity = v;
+  last_angular_velocity = w;
+//  vellin.data = last_linear_velocity;
+//  velang.data = last_angular_velocity;
   
   last_velocity_filtered_[LEFT] = GDIFF*step_time*last_velocity_[LEFT]+(1-GDIFF*step_time)*last_velocity_filtered_[LEFT];
   last_velocity_filtered_[RIGHT] = GDIFF*step_time*last_velocity_[RIGHT]+(1-GDIFF*step_time)*last_velocity_filtered_[RIGHT];
-  
-  motor_velocity_[LEFT] = last_velocity_filtered_[LEFT]*258.5; //velocity before gear reduction
-  motor_velocity_[RIGHT] = last_velocity_filtered_[RIGHT]*258.5;
-
-  raw_angular_velocity_left.data = last_velocity_[LEFT];
-  raw_angular_velocity_right.data = last_velocity_[RIGHT];
 
   angular_velocity_left.data = last_velocity_filtered_[LEFT];
   angular_velocity_right.data = last_velocity_filtered_[RIGHT];
 
-  motor_velocity_left.data = motor_velocity_[LEFT];
-  motor_velocity_right.data = motor_velocity_[RIGHT];
+  raw_angular_velocity_left.data = last_velocity_[LEFT];
+  raw_angular_velocity_right.data = last_velocity_[RIGHT];
 
   acc_tmp_[LEFT] += acc_filtered_[LEFT]*step_time;
   acc_filtered_[LEFT] = GDIFF2 * (last_velocity_filtered_[LEFT] - acc_tmp_[LEFT]);
@@ -611,31 +649,6 @@ bool updateOdometry(double diff_time)
 
   angular_acceleration_left.data = acc_filtered_[LEFT];
   angular_acceleration_right.data = acc_filtered_[RIGHT];
-  
-  
-  return true;
-}
-
-
-bool updateCurrent(double diff_time)
-{ 
-  double step_time;
-
-  step_time = 0.0;
-
-  step_time = diff_time;
-
-  if (step_time == 0)
-    return false;
-  
-  current_[LEFT] = (motor_voltage_[LEFT]-K_EN*last_velocity_filtered_[LEFT])/R_N;
-  current_[RIGHT] = (motor_voltage_[RIGHT]-K_EN*last_velocity_filtered_[RIGHT])/R_N;
-
-  current_filtered_[LEFT] = G_FILTER*step_time*current_[LEFT] + (1-G_FILTER*step_time)*current_filtered_[LEFT];
-  current_filtered_[RIGHT] = G_FILTER*step_time*current_[RIGHT] + (1-G_FILTER*step_time)*current_filtered_[RIGHT];
-
-  current_left.data = current_filtered_[LEFT];
-  current_right.data = current_filtered_[RIGHT];
   
   return true;
 }
@@ -650,18 +663,16 @@ bool updateDisturbanceTorque(double diff_time)
 
   if (step_time == 0)
     return false;
-  
-  disturbance_torque_[LEFT] = K_TN*current_filtered_[LEFT] + G_DOB*J_N*last_velocity_filtered_[LEFT];
-  disturbance_torque_[RIGHT] = K_TN*current_filtered_[RIGHT] + G_DOB*J_N*last_velocity_filtered_[RIGHT];
-  disturbance_torque_tmp_[LEFT] = G_DOB*step_time*disturbance_torque_[LEFT] + (1-G_DOB*step_time)*disturbance_torque_tmp_[LEFT];
-  disturbance_torque_tmp_[RIGHT] = G_DOB*step_time*disturbance_torque_[RIGHT] + (1-G_DOB*step_time)*disturbance_torque_tmp_[RIGHT];
-  disturbance_torque_filtered_[LEFT] = (disturbance_torque_tmp_[LEFT] - G_DOB*J_N*last_velocity_filtered_[LEFT]);
-  disturbance_torque_filtered_[RIGHT] = (disturbance_torque_tmp_[RIGHT]- G_DOB*J_N*last_velocity_filtered_[RIGHT]);
-  disturbance_torque_left.data = disturbance_torque_filtered_[LEFT];
-  disturbance_torque_right.data = disturbance_torque_filtered_[RIGHT];
 
-  compensation_voltage_left.data = disturbance_torque_filtered_[LEFT]*R_N/(K_TN);
-  compensation_voltage_right.data = disturbance_torque_filtered_[RIGHT]*R_N/(K_TN);
+  disturbance_torque_[LEFT] = (disturbance_torque_tmp_[LEFT] - G_DOB*J_N*last_velocity_[LEFT]);
+  disturbance_torque_[RIGHT] = (disturbance_torque_tmp_[RIGHT]- G_DOB*J_N*last_velocity_[RIGHT]);
+  disturbance_torque_tmp_[LEFT] = disturbance_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N + G_DOB*J_N*last_velocity_[LEFT]-disturbance_torque_tmp_[LEFT])*G_DOB*step_time;
+  disturbance_torque_tmp_[RIGHT] = disturbance_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N + G_DOB*J_N*last_velocity_[RIGHT]-disturbance_torque_tmp_[RIGHT])*G_DOB*step_time;
+  disturbance_torque_left.data = disturbance_torque_[LEFT];
+  disturbance_torque_right.data = disturbance_torque_[RIGHT];
+
+  compensation_current_left.data = disturbance_torque_[LEFT]/(K_TN);
+  compensation_current_right.data = disturbance_torque_[RIGHT]/(K_TN);
   
   return true;
 }
@@ -677,39 +688,73 @@ bool updateReactionTorque(double diff_time)
   if (step_time == 0)
     return false;
 
-//  if (last_velocity_filtered_[LEFT]>VELOCITY_EPSILON){
-//      reaction_torque_[LEFT] = K_TN*current_filtered_[LEFT]+G_DOB*J_N*last_velocity_filtered_[LEFT] - K_TN*F_plus_left/K_EN - D_plus_left*last_velocity_filtered_[LEFT]*K_TN/K_EN;
-//  }
-//  else if (last_velocity_filtered_[LEFT]<-VELOCITY_EPSILON){
-//      reaction_torque_[LEFT] = K_TN*current_filtered_[LEFT]+G_DOB*J_N*last_velocity_filtered_[LEFT] - F_minus_left*K_TN/K_EN - D_minus_left*last_velocity_filtered_[LEFT]*K_TN/K_EN;
-//  }
-//  else {
-  reaction_torque_[LEFT] = K_TN*current_filtered_[LEFT]+G_DOB*J_N*last_velocity_filtered_[LEFT];
-//  }
+  reaction_torque_[LEFT] = (reaction_torque_tmp_[LEFT] - G_DOB*J_N*last_velocity_[LEFT]);
+  reaction_torque_[RIGHT] = (reaction_torque_tmp_[RIGHT]- G_DOB*J_N*last_velocity_[RIGHT]);
 
-//  if (last_velocity_filtered_[RIGHT]>VELOCITY_EPSILON){
-//      reaction_torque_[RIGHT] = K_TN*current_filtered_[RIGHT]+G_DOB*J_N*last_velocity_filtered_[RIGHT] - F_plus_right*K_TN/K_EN - D_plus_right*last_velocity_filtered_[RIGHT]*K_TN/K_EN;
-//  }
-//  else if (last_velocity_filtered_[RIGHT]<-VELOCITY_EPSILON){
-//      reaction_torque_[RIGHT] = K_TN*current_filtered_[RIGHT]+G_DOB*J_N*last_velocity_filtered_[RIGHT] - F_minus_right*K_TN/K_EN - D_minus_right*last_velocity_filtered_[RIGHT]*K_TN/K_EN;
-//  }
-//  else {
-  reaction_torque_[RIGHT] = K_TN*current_filtered_[RIGHT]+G_DOB*J_N*last_velocity_filtered_[RIGHT];
-//  }
-  reaction_torque_tmp_[LEFT] = G_DOB*step_time*reaction_torque_[LEFT] + (1-G_DOB*step_time)*reaction_torque_tmp_[LEFT];
-  reaction_torque_tmp_[RIGHT] = G_DOB*step_time*reaction_torque_[RIGHT] + (1-G_DOB*step_time)*reaction_torque_tmp_[RIGHT];
-  reaction_torque_filtered_[LEFT] = (reaction_torque_tmp_[LEFT] - G_DOB*J_N*last_velocity_filtered_[LEFT]);
-  reaction_torque_filtered_[RIGHT] = (reaction_torque_tmp_[RIGHT]- G_DOB*J_N*last_velocity_filtered_[RIGHT]);
-  reaction_torque_left.data = reaction_torque_filtered_[LEFT];
-  reaction_torque_right.data = reaction_torque_filtered_[RIGHT];
+  if (disturbance_torque_[LEFT]>DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[LEFT] = reaction_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N - K_TN*K_EN*last_velocity_[LEFT]/R_N - F_plus_left - D_plus_left*last_velocity_[LEFT] + G_DOB*J_N*last_velocity_[LEFT]-reaction_torque_tmp_[LEFT])*G_DOB*step_time;
+  }
+  else if (disturbance_torque_[LEFT]<-DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[LEFT] = reaction_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N - K_TN*K_EN*last_velocity_[LEFT]/R_N - F_minus_left - D_minus_left*last_velocity_[LEFT] + G_DOB*J_N*last_velocity_[LEFT]-reaction_torque_tmp_[LEFT])*G_DOB*step_time;
+  }
+  else {
+      reaction_torque_tmp_[LEFT] = reaction_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N - K_TN*K_EN*last_velocity_[LEFT]/R_N + G_DOB*J_N*last_velocity_[LEFT]-reaction_torque_tmp_[LEFT])*G_DOB*step_time;
+  }
+
+  if (disturbance_torque_[RIGHT]>DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[RIGHT] = reaction_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N - K_TN*K_EN*last_velocity_[RIGHT]/R_N - F_plus_right - D_plus_right*last_velocity_[RIGHT] + G_DOB*J_N*last_velocity_[RIGHT]-reaction_torque_tmp_[RIGHT])*G_DOB*step_time;
+  }
+  else if (disturbance_torque_[RIGHT]<-DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[RIGHT] = reaction_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N - K_TN*K_EN*last_velocity_[RIGHT]/R_N - F_minus_right - D_minus_right*last_velocity_[RIGHT] + G_DOB*J_N*last_velocity_[RIGHT]-reaction_torque_tmp_[RIGHT])*G_DOB*step_time;
+  }
+  else {
+      reaction_torque_tmp_[RIGHT] = reaction_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N - K_TN*K_EN*last_velocity_[RIGHT]/R_N + G_DOB*J_N*last_velocity_[RIGHT]-reaction_torque_tmp_[RIGHT])*G_DOB*step_time;
+  }
+  
+  reaction_torque_left.data = reaction_torque_[LEFT];
+  reaction_torque_right.data = reaction_torque_[RIGHT];
   
   return true;
 }
 
-void updateReactionForce(void)
+bool updateReactionForce(double diff_time)
 { 
-  mobile_robot_reaction_force = (reaction_torque_filtered_[LEFT] + reaction_torque_filtered_[RIGHT])/WHEEL_RADIUS - M_R*WHEEL_RADIUS*(acc_filtered_[LEFT]+acc_filtered_[RIGHT])/2.0 ;
+  double step_time;
+
+  step_time = 0.0;
+
+  step_time = diff_time;
+
+  if (step_time == 0)
+    return false;
+    
+  mobile_robot_reaction_force = mobile_robot_reaction_force_tmp - G_ROBOT*(M_R)*(last_velocity_[LEFT]+last_velocity_[RIGHT])/2;
+  mobile_robot_reaction_force_tmp = mobile_robot_reaction_force_tmp + ((reaction_torque_[LEFT] + reaction_torque_[RIGHT])/WHEEL_RADIUS + G_ROBOT*(M_R)*last_linear_velocity - F_R - D_R*last_linear_velocity - mobile_robot_reaction_force_tmp)*G_ROBOT*step_time;
   reaction_force.data = mobile_robot_reaction_force;
+
+  mobile_robot_reaction_torque = mobile_robot_reaction_torque_tmp - G_ROBOT*(J_R)*last_angular_velocity;
+  mobile_robot_reaction_torque_tmp = mobile_robot_reaction_torque_tmp + (WHEEL_SEPARATION*(reaction_torque_[RIGHT]-reaction_torque_[LEFT])/(2*WHEEL_RADIUS) + G_ROBOT*(J_R)*last_angular_velocity -F_ROTATION-D_ROTATION*last_angular_velocity - mobile_robot_reaction_torque_tmp)*G_ROBOT*step_time;
+  reaction_torque.data = mobile_robot_reaction_torque;
+  return true;
+}
+
+bool controlAcceleration(double diff_time)
+{
+  double step_time;
+
+  step_time = 0.0;
+
+  step_time = diff_time;
+
+  if (step_time == 0)
+    return false;
+
+  cmd_acceleration_left = (1/WHEEL_RADIUS)*cmd_linear_acceleration + (-WHEEL_SEPARATION/(2*WHEEL_RADIUS))*cmd_angular_acceleration;
+  cmd_acceleration_right = (1/WHEEL_RADIUS)*cmd_linear_acceleration + (WHEEL_SEPARATION/(2*WHEEL_RADIUS))*cmd_angular_acceleration;
+  
+  pre_err_left = err_left;
+  pre_err_right = err_right;
+  return true;
 }
 
 /*******************************************************************************
@@ -745,9 +790,11 @@ void updateTF(geometry_msgs::TransformStamped& odom_tf)
 * Control motor pwm
 *******************************************************************************/
 void controlMotorPwm(void)
-{ 
-  goal_pwm_left = cmd_pwm_left;
-  goal_pwm_right = cmd_pwm_right;
+{
+  cmd_current_left = J_N*cmd_acceleration_left/K_TN;
+  cmd_current_right = J_N*cmd_acceleration_right/K_TN;
+  goal_pwm_left = (int) ((cmd_current_left + compensation_current_[LEFT])*R_N*885/11.1);
+  goal_pwm_right = (int) ((cmd_current_right + compensation_current_[RIGHT])*R_N*885/11.1);
      
   bool dxl_comm_result = false;
 

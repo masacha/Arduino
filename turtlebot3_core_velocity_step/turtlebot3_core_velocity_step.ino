@@ -1,17 +1,17 @@
 /*******************************************************************************
-  Copyright 2016 ROBOTIS CO., LTD.
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+* Copyright 2016 ROBOTIS CO., LTD.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 *******************************************************************************/
 
 /* Authors: Yoonseok Pyo, Leon Jung, Darby Lim, HanCheol Cho */
@@ -19,17 +19,18 @@
 #include "turtlebot3_core_config.h"
 
 /*******************************************************************************
-  ROS NodeHandle
+* ROS NodeHandle
 *******************************************************************************/
 ros::NodeHandle nh;
 
 /*******************************************************************************
-  Subscriber
+* Subscriber
 *******************************************************************************/
-ros::Subscriber<std_msgs::Float64> cmd_force_sub("cmd_force", commandForceCallback);
+ros::Subscriber<std_msgs::Float64> cmd_velocity_left_sub("cmd_velocity_left", commandVelocityLeftCallback);
+ros::Subscriber<std_msgs::Float64> cmd_velocity_right_sub("cmd_velocity_right", commandVelocityRightCallback);
 
 /*******************************************************************************
-  Publisher
+* Publisher
 *******************************************************************************/
 // Bumpers, cliffs, buttons, encoders, battery of Turtlebot3
 turtlebot3_msgs::SensorState sensor_state_msg;
@@ -45,64 +46,64 @@ ros::Publisher odom_pub("odom", &odom);
 sensor_msgs::JointState joint_states;
 ros::Publisher joint_states_pub("joint_states", &joint_states);
 
+std_msgs::Float64 raw_angular_velocity_left;
+ros::Publisher raw_angular_velocity_left_pub("raw_angular_velocity_left",&raw_angular_velocity_left);
+
+std_msgs::Float64 raw_angular_velocity_right;
+ros::Publisher raw_angular_velocity_right_pub("raw_angular_velocity_right",&raw_angular_velocity_right);
+
 std_msgs::Float64 angular_velocity_left;
-ros::Publisher angular_velocity_left_pub("angular_velocity_left", &angular_velocity_left);
+ros::Publisher angular_velocity_left_pub("angular_velocity_left",&angular_velocity_left);
 
 std_msgs::Float64 angular_velocity_right;
-ros::Publisher angular_velocity_right_pub("angular_velocity_right", &angular_velocity_right);
+ros::Publisher angular_velocity_right_pub("angular_velocity_right",&angular_velocity_right);
 
 std_msgs::Float64 angular_acceleration_left;
-ros::Publisher angular_acceleration_left_pub("angular_acceleration_left", &angular_acceleration_left);
+ros::Publisher angular_acceleration_left_pub("angular_acceleration_left",&angular_acceleration_left);
 
 std_msgs::Float64 angular_acceleration_right;
-ros::Publisher angular_acceleration_right_pub("angular_acceleration_right", &angular_acceleration_right);
-
-std_msgs::Float64 motor_velocity_left;
-ros::Publisher motor_velocity_left_pub("motor_velocity_left", &motor_velocity_left);
-
-std_msgs::Float64 motor_velocity_right;
-ros::Publisher motor_velocity_right_pub("motor_velocity_right", &motor_velocity_right);
-
-std_msgs::Float64 current_left;
-ros::Publisher current_left_pub("current_left", &current_left);
-
-std_msgs::Float64 current_right;
-ros::Publisher current_right_pub("current_right", &current_right);
+ros::Publisher angular_acceleration_right_pub("angular_acceleration_right",&angular_acceleration_right);
 
 std_msgs::Float64 disturbance_torque_left;
-ros::Publisher disturbance_torque_left_pub("disturbance_torque_left", &disturbance_torque_left);
+ros::Publisher disturbance_torque_left_pub("disturbance_torque_left",&disturbance_torque_left);
 
 std_msgs::Float64 disturbance_torque_right;
-ros::Publisher disturbance_torque_right_pub("disturbance_torque_right", &disturbance_torque_right);
+ros::Publisher disturbance_torque_right_pub("disturbance_torque_right",&disturbance_torque_right);
 
 std_msgs::Float64 reaction_torque_left;
-ros::Publisher reaction_torque_left_pub("reaction_torque_left", &reaction_torque_left);
+ros::Publisher reaction_torque_left_pub("reaction_torque_left",&reaction_torque_left);
 
 std_msgs::Float64 reaction_torque_right;
-ros::Publisher reaction_torque_right_pub("reaction_torque_right", &reaction_torque_right);
+ros::Publisher reaction_torque_right_pub("reaction_torque_right",&reaction_torque_right);
 
 std_msgs::Float64 reaction_force;
-ros::Publisher reaction_force_pub("reaction_force", &reaction_force);
+ros::Publisher reaction_force_pub("reaction_force",&reaction_force);
 
-std_msgs::Float64 compensation_voltage_left;
-ros::Publisher compensation_voltage_left_pub("compensation_voltage_left", &compensation_voltage_left);
+std_msgs::Float64 reaction_torque;
+ros::Publisher reaction_torque_pub("reaction_torque",&reaction_torque);
 
-std_msgs::Float64 compensation_voltage_right;
-ros::Publisher compensation_voltage_right_pub("compensation_voltage_right", &compensation_voltage_right);
+std_msgs::Float64 compensation_current_left;
+ros::Publisher compensation_current_left_pub("compensation_current_left",&compensation_current_left);
+
+std_msgs::Float64 compensation_current_right;
+ros::Publisher compensation_current_right_pub("compensation_current_right",&compensation_current_right);
 
 std_msgs::Float64 motor_voltage_left;
-ros::Publisher motor_voltage_left_pub("motor_voltage_left", &motor_voltage_left);
+ros::Publisher motor_voltage_left_pub("motor_voltage_left",&motor_voltage_left);
 
 std_msgs::Float64 motor_voltage_right;
-ros::Publisher motor_voltage_right_pub("motor_voltage_right", &motor_voltage_right);
-
-std_msgs::Float64 error;
-ros::Publisher error_pub("error",&error);
+ros::Publisher motor_voltage_right_pub("motor_voltage_right",&motor_voltage_right);
 
 std_msgs::Float64 yaw;
-ros::Publisher yaw_pub("yaw", &yaw);
+ros::Publisher yaw_pub("yaw",&yaw);
+
+std_msgs::Float64 raw_sensor_value;
+ros::Publisher raw_sensor_value_pub("raw_sensor_value",&raw_sensor_value);
+
+std_msgs::Float64 filtered_sensor_value;
+ros::Publisher filtered_sensor_value_pub("filtered_sensor_value",&filtered_sensor_value);
 /*******************************************************************************
-  Transform Broadcaster
+* Transform Broadcaster
 *******************************************************************************/
 // TF of Turtlebot3
 geometry_msgs::TransformStamped tfs_msg;
@@ -110,12 +111,12 @@ geometry_msgs::TransformStamped odom_tf;
 tf::TransformBroadcaster tfbroadcaster;
 
 /*******************************************************************************
-  SoftwareTimer of Turtlebot3
+* SoftwareTimer of Turtlebot3
 *******************************************************************************/
 static uint32_t tTime[4];
 
 /*******************************************************************************
-  Declaration for motor
+* Declaration for motor
 *******************************************************************************/
 Turtlebot3MotorDriver motor_driver;
 bool init_encoder_[2]  = {false, false};
@@ -124,50 +125,55 @@ int32_t last_tick_[2];
 double last_rad_[2];
 double last_velocity_[2];
 double last_velocity_filtered_[2];
-double motor_velocity_[2];
+double cmd_velocity_left = 0.0;
+double cmd_velocity_right = 0.0;
 int64_t goal_pwm_left  = 0;
 int64_t goal_pwm_right = 0;
-int64_t cmd_pwm_left  = 0;
-int64_t cmd_pwm_right = 0;
-double cmd_force  = 0;
-double current_[2];
-double current_filtered_[2];
+double cmd_current_left  = 0.0;
+double cmd_current_right = 0.0;
 double motor_voltage_[2];
-double compensation_voltage_[2];
+double compensation_current_[2];
 double disturbance_torque_[2];
 double disturbance_torque_tmp_[2];
-double disturbance_torque_filtered_[2];
 double reaction_torque_[2];
 double reaction_torque_tmp_[2];
-double reaction_torque_filtered_[2];
 double mobile_robot_reaction_force;
+double mobile_robot_reaction_force_tmp;
+double mobile_robot_reaction_torque;
+double mobile_robot_reaction_torque_tmp;
 double acc_tmp_[2];
 double acc_filtered_[2];
-double p_gain = 50.0;
-double i_gain = 0.0;
-double d_gain = 0.0;
-double pwm_gain = 1.0;
-double control_output = 0.0;
-double force_error = 0.0;
-double pre_error = 0.0;
-double integral = 0.0;
-double derivative = 0.0;
-char keyboard;
+
+double cmd_acceleration_left = 0.0;
+double cmd_acceleration_right = 0.0;
+double err_left = 0.0;
+double err_right = 0.0;
+double err_int_left = 0.0;
+double err_int_right = 0.0;
+double err_der_left = 0.0;
+double err_der_right = 0.0;
+double pre_err_left = 0.0;
+double pre_err_right = 0.0;
+
+int64_t analogInPin;
+int64_t last_measured_current;
+double filtered_measured_current;
+unsigned long prev_time;
 
 /*******************************************************************************
-  Declaration for IMU
+* Declaration for IMU
 *******************************************************************************/
 cIMU imu;
 
 /*******************************************************************************
-  Declaration for test drive
+* Declaration for test drive
 *******************************************************************************/
 bool start_move = false;
 bool start_rotate = false;
 int32_t last_left_encoder  = 0;
 int32_t last_right_encoder = 0;
 /*******************************************************************************
-  Declaration for SLAM and navigation
+* Declaration for SLAM and navigation
 *******************************************************************************/
 unsigned long prev_update_time;
 float odom_pose[3];
@@ -177,7 +183,7 @@ float joint_states_vel[2] = {0.0, 0.0};
 float joint_states_eff[2] = {0.0, 0.0};
 
 /*******************************************************************************
-  Declaration for LED
+* Declaration for LED
 *******************************************************************************/
 #define LED_TXD         0
 #define LED_RXD         1
@@ -185,7 +191,7 @@ float joint_states_eff[2] = {0.0, 0.0};
 #define LED_ROS_CONNECT 3
 
 /*******************************************************************************
-  Declaration for Battery
+* Declaration for Battery
 *******************************************************************************/
 #define BATTERY_POWER_OFF             0
 #define BATTERY_POWER_STARTUP         1
@@ -199,39 +205,39 @@ static float   battery_valtage_raw = 0;
 static uint8_t battery_state   = BATTERY_POWER_OFF;
 
 /*******************************************************************************
-  Setup function
+* Setup function
 *******************************************************************************/
 void setup()
 {
   // Initialize ROS node handle, advertise and subscribe the topics
   nh.initNode();
   nh.getHardware()->setBaud(115200);
-  nh.subscribe(cmd_force_sub);
-  nh.subscribe(cmd_force_sub);
+  nh.subscribe(cmd_velocity_left_sub);
+  nh.subscribe(cmd_velocity_right_sub);
   nh.advertise(sensor_state_pub);
   nh.advertise(imu_pub);
   nh.advertise(odom_pub);
   nh.advertise(joint_states_pub);
   nh.advertise(angular_velocity_left_pub);
   nh.advertise(angular_velocity_right_pub);
+  nh.advertise(raw_angular_velocity_left_pub);
+  nh.advertise(raw_angular_velocity_right_pub);
   nh.advertise(angular_acceleration_left_pub);
   nh.advertise(angular_acceleration_right_pub);
-  nh.advertise(motor_velocity_left_pub);
-  nh.advertise(motor_velocity_right_pub);
-  nh.advertise(current_left_pub);
-  nh.advertise(current_right_pub);
   nh.advertise(disturbance_torque_left_pub);
   nh.advertise(disturbance_torque_right_pub);
   nh.advertise(motor_voltage_left_pub);
   nh.advertise(motor_voltage_right_pub);
-  nh.advertise(compensation_voltage_left_pub);
-  nh.advertise(compensation_voltage_right_pub);
+  nh.advertise(compensation_current_left_pub);
+  nh.advertise(compensation_current_right_pub);
   nh.advertise(reaction_torque_left_pub);
   nh.advertise(reaction_torque_right_pub);
   nh.advertise(reaction_force_pub);
+  nh.advertise(reaction_torque_pub);
   nh.advertise(yaw_pub);
-  nh.advertise(error_pub);
-
+  nh.advertise(raw_sensor_value_pub);
+  nh.advertise(filtered_sensor_value_pub);
+  
   tfbroadcaster.init(nh);
 
   nh.loginfo("Connected to OpenCR board!");
@@ -256,31 +262,22 @@ void setup()
   acc_filtered_[LEFT] = 0.0;
   acc_filtered_[RIGHT] = 0.0;
 
-  motor_velocity_[LEFT] = 0.0;
-  motor_velocity_[RIGHT] = 0.0;
-
-  current_filtered_[LEFT] = 0.0;
-  current_filtered_[RIGHT] = 0.0;
-
   disturbance_torque_tmp_[LEFT] = 0.0;
   disturbance_torque_tmp_[RIGHT] = 0.0;
-
-  disturbance_torque_filtered_[LEFT] = 0.0;
-  disturbance_torque_filtered_[RIGHT] = 0.0;
-
+ 
   reaction_torque_[LEFT] = 0.0;
   reaction_torque_[RIGHT] = 0.0;
 
   reaction_torque_tmp_[LEFT] = 0.0;
   reaction_torque_tmp_[RIGHT] = 0.0;
 
-  reaction_torque_filtered_[LEFT] = 0.0;
-  reaction_torque_filtered_[RIGHT] = 0.0;
-
   mobile_robot_reaction_force = 0.0;
+  mobile_robot_reaction_force_tmp = 0.0;
+  mobile_robot_reaction_torque = 0.0;
+  mobile_robot_reaction_torque_tmp = 0.0;
 
-  compensation_voltage_[LEFT] = 0.0;
-  compensation_voltage_[RIGHT] = 0.0;
+  compensation_current_[LEFT]=0.0;
+  compensation_current_[RIGHT]=0.0;
 
   joint_states.header.frame_id = "base_footprint";
   joint_states.name            = joint_states_name;
@@ -291,6 +288,7 @@ void setup()
   joint_states.effort_length   = 2;
 
   prev_update_time = millis();
+  prev_time = millis();
 
   pinMode(13, OUTPUT);
 
@@ -299,38 +297,27 @@ void setup()
   setup_end = true;
 
   char log_msg2[50];
-
-  //  if (motor_driver.lmao())
-  //  {
-  //    sprintf(log_msg2, "Changing Operating Mode : Success");
-  //    nh.loginfo(log_msg2);
-  //  }
-  //  else
-  //  {
-  //    sprintf(log_msg2, "Failed to Change Operating Mode");
-  //    nh.loginfo(log_msg2);
-  //  }
 }
 
 /*******************************************************************************
-  Loop function
+* Loop function
 *******************************************************************************/
 void loop()
 {
-  if ((millis() - tTime[0]) >= (1000 / CONTROL_MOTOR_PWM_PERIOD))
+  if ((millis()-tTime[0]) >= (1000 / CONTROL_MOTOR_PWM_PERIOD))
   {
     controlMotorPwm();
     tTime[0] = millis();
   }
 
-  if ((millis() - tTime[2]) >= (1000 / DRIVE_INFORMATION_PUBLISH_PERIOD))
+  if ((millis()-tTime[2]) >= (1000 / DRIVE_INFORMATION_PUBLISH_PERIOD))
   {
     publishSensorStateMsg();
     publishDriveInformation();
     tTime[2] = millis();
   }
 
-  if ((millis() - tTime[3]) >= (1000 / IMU_PUBLISH_PERIOD))
+  if ((millis()-tTime[3]) >= (1000 / IMU_PUBLISH_PERIOD))
   {
     publishImuMsg();
     tTime[3] = millis();
@@ -350,62 +337,26 @@ void loop()
 
   char log_msg3[50];
 
-#ifdef DEBUG
-  if (Serial.available())
-  {
-    keyboard = Serial.read();
-    if (keyboard == 'u')
-    {
-      p_gain = p_gain + 1.0;
-    }
-    else if (keyboard == 'j')
-    {
-      p_gain = p_gain - 1.0;
-    }
-    else if (keyboard == 'o')
-    {
-      d_gain = d_gain + 0.1;
-    }
-    else if (keyboard == 'l')
-    {
-      d_gain = d_gain - 0.1;
-    }
-    else if (keyboard == 'i')
-    {
-      i_gain = i_gain + 0.1;
-    }
-    else if (keyboard == 'k')
-    {
-      i_gain = i_gain - 0.1;
-    }
-  }
-
-  Serial.print(" P : ");
-  Serial.print(p_gain);
-  Serial.print(" I : ");
-  Serial.print(i_gain);
-  Serial.print(" D : ");
-  Serial.print(d_gain);
-  Serial.print(" output : ");
-  Serial.print(control_output_left);
-  Serial.print(control_output_right);
-#endif
-
   // Call all the callbacks waiting to be called at that point in time
   nh.spinOnce();
 }
 
 
 /*******************************************************************************
-  Callback function for cmd_force_msg
+* Callback function for cmd_pwm msg
 *******************************************************************************/
-void commandForceCallback(const std_msgs::Float64& cmd_force_msg)
+void commandVelocityLeftCallback(const std_msgs::Float64& cmd_velocity_msg)
 {
-  cmd_force  = cmd_force_msg.data;
+  cmd_velocity_left  = cmd_velocity_msg.data;
+}
+
+void commandVelocityRightCallback(const std_msgs::Float64& cmd_velocity_msg)
+{
+  cmd_velocity_right  = cmd_velocity_msg.data;
 }
 
 /*******************************************************************************
-  Publish msgs (IMU data: angular velocity, linear acceleration, orientation)
+* Publish msgs (IMU data: angular velocity, linear acceleration, orientation)
 *******************************************************************************/
 void publishImuMsg(void)
 {
@@ -471,7 +422,7 @@ void publishImuMsg(void)
 }
 
 /*******************************************************************************
-  Publish msgs (sensor_state: bumpers, cliffs, buttons, encoders, battery)
+* Publish msgs (sensor_state: bumpers, cliffs, buttons, encoders, battery)
 *******************************************************************************/
 void publishSensorStateMsg(void)
 {
@@ -517,8 +468,26 @@ void publishSensorStateMsg(void)
   last_rad_[RIGHT] += TICK2RAD * (double)last_diff_tick_[RIGHT];
 }
 
+bool updateSensorValue(double diff_time)
+{
+  double step_time;
+
+  step_time = 0.0;
+
+  step_time = diff_time;
+
+  if (step_time == 0)
+    return false;
+
+  last_measured_current = analogRead(A0);
+  filtered_measured_current = G_SENSOR*step_time*last_measured_current+(1-G_SENSOR*step_time)*filtered_measured_current;
+  raw_sensor_value.data = -((last_measured_current*3.3/1023.0)-2.5)*5.0/2.0;
+  filtered_sensor_value.data = -((filtered_measured_current*3.3/1023.0)-2.5)*5.0/2.0;
+  return true;
+}
+
 /*******************************************************************************
-  Publish msgs (odometry, joint states, tf)
+* Publish msgs (odometry, joint states, tf)
 *******************************************************************************/
 void publishDriveInformation(void)
 {
@@ -534,29 +503,27 @@ void publishDriveInformation(void)
   yaw_pub.publish(&yaw);
 
   //velocity and acceleration
+  raw_angular_velocity_left_pub.publish(&raw_angular_velocity_left);
+  raw_angular_velocity_right_pub.publish(&raw_angular_velocity_right);
   angular_velocity_left_pub.publish(&angular_velocity_left);
   angular_velocity_right_pub.publish(&angular_velocity_right);
   angular_acceleration_left_pub.publish(&angular_acceleration_left);
   angular_acceleration_right_pub.publish(&angular_acceleration_right);
-  motor_velocity_left_pub.publish(&motor_velocity_left);
-  motor_velocity_right_pub.publish(&motor_velocity_right);
 
-  //force controller
-  controlForce(step_time * 0.001);
+  unsigned long time_now_sensor = millis();
+  unsigned long step_time_sensor = time_now_sensor - prev_time;
+  prev_time = time_now_sensor;
 
-  error_pub.publish(&error);
-
-  //current
-  updateCurrent((double)(step_time * 0.001));
-  current_left_pub.publish(&current_left);
-  current_right_pub.publish(&current_right);
+  updateSensorValue(step_time_sensor*0.001);
+  raw_sensor_value_pub.publish(&raw_sensor_value);
+  filtered_sensor_value_pub.publish(&filtered_sensor_value);
 
   //disturbance_torque
   updateDisturbanceTorque((double)(step_time * 0.001));
   disturbance_torque_left_pub.publish(&disturbance_torque_left);
   disturbance_torque_right_pub.publish(&disturbance_torque_right);
-  compensation_voltage_left_pub.publish(&compensation_voltage_left);
-  compensation_voltage_right_pub.publish(&compensation_voltage_right);
+  compensation_current_left_pub.publish(&compensation_current_left);
+  compensation_current_right_pub.publish(&compensation_current_right);
 
   motor_voltage_left_pub.publish(&motor_voltage_left);
   motor_voltage_right_pub.publish(&motor_voltage_right);
@@ -565,21 +532,25 @@ void publishDriveInformation(void)
   updateReactionTorque((double)(step_time * 0.001));
   reaction_torque_left_pub.publish(&reaction_torque_left);
   reaction_torque_right_pub.publish(&reaction_torque_right);
-  updateReactionForce();
+  updateReactionForce(step_time * 0.001);
   reaction_force_pub.publish(&reaction_force);
-
+  reaction_torque_pub.publish(&reaction_torque);
+  
   // joint_states
   updateJoint();
   joint_states.header.stamp = stamp_now;
   joint_states_pub.publish(&joint_states);
 
-  // tf
+  // tff
   updateTF(odom_tf);
   tfbroadcaster.sendTransform(odom_tf);
+
+  //Acceleration Control
+  controlAcceleration(step_time*0.001);
 }
 
 /*******************************************************************************
-  Calculate the odometry
+* Calculate the odometry
 *******************************************************************************/
 bool updateOdometry(double diff_time)
 {
@@ -611,8 +582,8 @@ bool updateOdometry(double diff_time)
     wheel_r = 0.0;
 
   delta_s     = WHEEL_RADIUS * (wheel_r + wheel_l) / 2.0;
-  delta_theta = atan2f(imu.quat[1] * imu.quat[2] + imu.quat[0] * imu.quat[3],
-                       0.5f - imu.quat[2] * imu.quat[2] - imu.quat[3] * imu.quat[3]) - last_theta;
+  delta_theta = atan2f(imu.quat[1]*imu.quat[2] + imu.quat[0]*imu.quat[3],
+                       0.5f - imu.quat[2]*imu.quat[2] - imu.quat[3]*imu.quat[3]) - last_theta;
 
   v = delta_s / step_time;
   w = delta_theta / step_time;
@@ -628,10 +599,10 @@ bool updateOdometry(double diff_time)
   // compute odometric instantaneous velocity
   odom_vel[0] = v;
   odom_vel[1] = 0.0;
-  odom_vel[2] = w;
+  odom_vel[2] = w;  
 
   yaw.data = odom_pose[2];
-
+  
   odom.pose.pose.position.x = odom_pose[0];
   odom.pose.pose.position.y = odom_pose[1];
   odom.pose.pose.position.z = 0;
@@ -641,60 +612,33 @@ bool updateOdometry(double diff_time)
   odom.twist.twist.linear.x  = odom_vel[0];
   odom.twist.twist.angular.z = odom_vel[2];
 
-  last_theta = atan2f(imu.quat[1] * imu.quat[2] + imu.quat[0] * imu.quat[3],
-                      0.5f - imu.quat[2] * imu.quat[2] - imu.quat[3] * imu.quat[3]);
-
-  last_velocity_filtered_[LEFT] = GDIFF * step_time * last_velocity_[LEFT] + (1 - GDIFF * step_time) * last_velocity_filtered_[LEFT];
-  last_velocity_filtered_[RIGHT] = GDIFF * step_time * last_velocity_[RIGHT] + (1 - GDIFF * step_time) * last_velocity_filtered_[RIGHT];
-
-  motor_velocity_[LEFT] = last_velocity_filtered_[LEFT] * 258.5; //velocity before gear reduction
-  motor_velocity_[RIGHT] = last_velocity_filtered_[RIGHT] * 258.5;
+  last_theta = atan2f(imu.quat[1]*imu.quat[2] + imu.quat[0]*imu.quat[3],
+                      0.5f - imu.quat[2]*imu.quat[2] - imu.quat[3]*imu.quat[3]);
+  
+  last_velocity_filtered_[LEFT] = GDIFF*step_time*last_velocity_[LEFT]+(1-GDIFF*step_time)*last_velocity_filtered_[LEFT];
+  last_velocity_filtered_[RIGHT] = GDIFF*step_time*last_velocity_[RIGHT]+(1-GDIFF*step_time)*last_velocity_filtered_[RIGHT];
 
   angular_velocity_left.data = last_velocity_filtered_[LEFT];
   angular_velocity_right.data = last_velocity_filtered_[RIGHT];
 
-  motor_velocity_left.data = motor_velocity_[LEFT];
-  motor_velocity_right.data = motor_velocity_[RIGHT];
+  raw_angular_velocity_left.data = last_velocity_[LEFT];
+  raw_angular_velocity_right.data = last_velocity_[RIGHT];
 
-  acc_tmp_[LEFT] += acc_filtered_[LEFT] * step_time;
+  acc_tmp_[LEFT] += acc_filtered_[LEFT]*step_time;
   acc_filtered_[LEFT] = GDIFF2 * (last_velocity_filtered_[LEFT] - acc_tmp_[LEFT]);
 
-  acc_tmp_[RIGHT] += acc_filtered_[RIGHT] * step_time;
+  acc_tmp_[RIGHT] += acc_filtered_[RIGHT]*step_time;
   acc_filtered_[RIGHT] = GDIFF2 * (last_velocity_filtered_[RIGHT] - acc_tmp_[RIGHT]);
 
   angular_acceleration_left.data = acc_filtered_[LEFT];
   angular_acceleration_right.data = acc_filtered_[RIGHT];
-
-
-  return true;
-}
-
-
-bool updateCurrent(double diff_time)
-{
-  double step_time;
-
-  step_time = 0.0;
-
-  step_time = diff_time;
-
-  if (step_time == 0)
-    return false;
-
-  current_[LEFT] = (motor_voltage_[LEFT] - K_EN * last_velocity_filtered_[LEFT]) / R_N;
-  current_[RIGHT] = (motor_voltage_[RIGHT] - K_EN * last_velocity_filtered_[RIGHT]) / R_N;
-
-  current_filtered_[LEFT] = G_FILTER * step_time * current_[LEFT] + (1 - G_FILTER * step_time) * current_filtered_[LEFT];
-  current_filtered_[RIGHT] = G_FILTER * step_time * current_[RIGHT] + (1 - G_FILTER * step_time) * current_filtered_[RIGHT];
-
-  current_left.data = current_filtered_[LEFT];
-  current_right.data = current_filtered_[RIGHT];
-
+  
+  
   return true;
 }
 
 bool updateDisturbanceTorque(double diff_time)
-{
+{ 
   double step_time;
 
   step_time = 0.0;
@@ -704,22 +648,81 @@ bool updateDisturbanceTorque(double diff_time)
   if (step_time == 0)
     return false;
 
-  disturbance_torque_[LEFT] = K_TN * current_filtered_[LEFT] + G_DOB * J_N * last_velocity_filtered_[LEFT];
-  disturbance_torque_[RIGHT] = K_TN * current_filtered_[RIGHT] + G_DOB * J_N * last_velocity_filtered_[RIGHT];
-  disturbance_torque_tmp_[LEFT] = G_DOB * step_time * disturbance_torque_[LEFT] + (1 - G_DOB * step_time) * disturbance_torque_tmp_[LEFT];
-  disturbance_torque_tmp_[RIGHT] = G_DOB * step_time * disturbance_torque_[RIGHT] + (1 - G_DOB * step_time) * disturbance_torque_tmp_[RIGHT];
-  disturbance_torque_filtered_[LEFT] = (disturbance_torque_tmp_[LEFT] - G_DOB * J_N * last_velocity_filtered_[LEFT]);
-  disturbance_torque_filtered_[RIGHT] = (disturbance_torque_tmp_[RIGHT] - G_DOB * J_N * last_velocity_filtered_[RIGHT]);
-  disturbance_torque_left.data = disturbance_torque_filtered_[LEFT];
-  disturbance_torque_right.data = disturbance_torque_filtered_[RIGHT];
+  disturbance_torque_[LEFT] = (disturbance_torque_tmp_[LEFT] - G_DOB*J_N*last_velocity_[LEFT]);
+  disturbance_torque_[RIGHT] = (disturbance_torque_tmp_[RIGHT]- G_DOB*J_N*last_velocity_[RIGHT]);
+  disturbance_torque_tmp_[LEFT] = disturbance_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N + G_DOB*J_N*last_velocity_[LEFT]-disturbance_torque_tmp_[LEFT])*G_DOB*step_time;
+  disturbance_torque_tmp_[RIGHT] = disturbance_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N + G_DOB*J_N*last_velocity_[RIGHT]-disturbance_torque_tmp_[RIGHT])*G_DOB*step_time;
+  disturbance_torque_left.data = disturbance_torque_[LEFT];
+  disturbance_torque_right.data = disturbance_torque_[RIGHT];
 
-  compensation_voltage_left.data = disturbance_torque_filtered_[LEFT] * R_N / (K_TN);
-  compensation_voltage_right.data = disturbance_torque_filtered_[RIGHT] * R_N / (K_TN);
-
+  compensation_current_left.data = disturbance_torque_[LEFT]/(K_TN);
+  compensation_current_right.data = disturbance_torque_[RIGHT]/(K_TN);
+  
   return true;
 }
 
 bool updateReactionTorque(double diff_time)
+{ 
+  double step_time;
+
+  step_time = 0.0;
+
+  step_time = diff_time;
+
+  if (step_time == 0)
+    return false;
+
+  reaction_torque_[LEFT] = (reaction_torque_tmp_[LEFT] - G_DOB*J_N*last_velocity_[LEFT]);
+  reaction_torque_[RIGHT] = (reaction_torque_tmp_[RIGHT]- G_DOB*J_N*last_velocity_[RIGHT]);
+
+  if (disturbance_torque_[LEFT]>DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[LEFT] = reaction_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N - K_TN*K_EN*last_velocity_[LEFT]/R_N - F_plus_left - D_plus_left*last_velocity_[LEFT] + G_DOB*J_N*last_velocity_[LEFT]-reaction_torque_tmp_[LEFT])*G_DOB*step_time;
+  }
+  else if (disturbance_torque_[LEFT]<-DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[LEFT] = reaction_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N - K_TN*K_EN*last_velocity_[LEFT]/R_N - F_minus_left - D_minus_left*last_velocity_[LEFT] + G_DOB*J_N*last_velocity_[LEFT]-reaction_torque_tmp_[LEFT])*G_DOB*step_time;
+  }
+  else {
+      reaction_torque_tmp_[LEFT] = reaction_torque_tmp_[LEFT] + (K_TN*motor_voltage_[LEFT]/R_N - K_TN*K_EN*last_velocity_[LEFT]/R_N + G_DOB*J_N*last_velocity_[LEFT]-reaction_torque_tmp_[LEFT])*G_DOB*step_time;
+  }
+
+  if (disturbance_torque_[RIGHT]>DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[RIGHT] = reaction_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N - K_TN*K_EN*last_velocity_[RIGHT]/R_N - F_plus_right - D_plus_right*last_velocity_[RIGHT] + G_DOB*J_N*last_velocity_[RIGHT]-reaction_torque_tmp_[RIGHT])*G_DOB*step_time;
+  }
+  else if (disturbance_torque_[RIGHT]<-DISTURBANCE_EPSILON){
+      reaction_torque_tmp_[RIGHT] = reaction_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N - K_TN*K_EN*last_velocity_[RIGHT]/R_N - F_minus_right - D_minus_right*last_velocity_[RIGHT] + G_DOB*J_N*last_velocity_[RIGHT]-reaction_torque_tmp_[RIGHT])*G_DOB*step_time;
+  }
+  else {
+      reaction_torque_tmp_[RIGHT] = reaction_torque_tmp_[RIGHT] + (K_TN*motor_voltage_[RIGHT]/R_N - K_TN*K_EN*last_velocity_[RIGHT]/R_N + G_DOB*J_N*last_velocity_[RIGHT]-reaction_torque_tmp_[RIGHT])*G_DOB*step_time;
+  }
+  
+  reaction_torque_left.data = reaction_torque_[LEFT];
+  reaction_torque_right.data = reaction_torque_[RIGHT];
+  
+  return true;
+}
+
+bool updateReactionForce(double diff_time)
+{ 
+  double step_time;
+
+  step_time = 0.0;
+
+  step_time = diff_time;
+
+  if (step_time == 0)
+    return false;
+    
+  mobile_robot_reaction_force = mobile_robot_reaction_force_tmp - G_ROBOT*(M_R)*(last_velocity_[LEFT]+last_velocity_[RIGHT])/2;
+  mobile_robot_reaction_force_tmp = mobile_robot_reaction_force_tmp + ((reaction_torque_[LEFT] + reaction_torque_[RIGHT])/WHEEL_RADIUS + G_ROBOT*(M_R)*(last_velocity_[LEFT]+last_velocity_[RIGHT])/2- F_R - D_R*(last_velocity_[LEFT]+last_velocity_[RIGHT])/2 - mobile_robot_reaction_force_tmp)*G_ROBOT*step_time;
+  reaction_force.data = mobile_robot_reaction_force;
+
+  mobile_robot_reaction_torque = mobile_robot_reaction_torque_tmp - G_ROBOT*(J_R)*WHEEL_RADIUS*(last_velocity_[RIGHT]-last_velocity_[LEFT])/WHEEL_SEPARATION;
+  mobile_robot_reaction_torque_tmp = mobile_robot_reaction_torque_tmp + (WHEEL_SEPARATION*(reaction_torque_[RIGHT]-reaction_torque_[LEFT])/(2*WHEEL_RADIUS) + G_ROBOT*(J_R)*WHEEL_RADIUS*(last_velocity_[RIGHT]- last_velocity_[LEFT])/WHEEL_SEPARATION -F_ROTATION-D_ROTATION*WHEEL_RADIUS*(last_velocity_[RIGHT]- last_velocity_[LEFT])/WHEEL_SEPARATION - mobile_robot_reaction_torque_tmp)*G_ROBOT*step_time;
+  reaction_torque.data = mobile_robot_reaction_torque;
+  return true;
+}
+
+bool controlAcceleration(double diff_time)
 {
   double step_time;
 
@@ -730,43 +733,26 @@ bool updateReactionTorque(double diff_time)
   if (step_time == 0)
     return false;
 
-  //  if (last_velocity_filtered_[LEFT]>VELOCITY_EPSILON){
-  //      reaction_torque_[LEFT] = K_TN*current_filtered_[LEFT]+G_DOB*J_N*last_velocity_filtered_[LEFT] - K_TN*F_plus_left/K_EN - D_plus_left*last_velocity_filtered_[LEFT]*K_TN/K_EN;
-  //  }
-  //  else if (last_velocity_filtered_[LEFT]<-VELOCITY_EPSILON){
-  //      reaction_torque_[LEFT] = K_TN*current_filtered_[LEFT]+G_DOB*J_N*last_velocity_filtered_[LEFT] - F_minus_left*K_TN/K_EN - D_minus_left*last_velocity_filtered_[LEFT]*K_TN/K_EN;
-  //  }
-  //  else {
-  reaction_torque_[LEFT] = K_TN * current_filtered_[LEFT] + G_DOB * J_N * last_velocity_filtered_[LEFT];
-  //  }
-
-  //  if (last_velocity_filtered_[RIGHT]>VELOCITY_EPSILON){
-  //      reaction_torque_[RIGHT] = K_TN*current_filtered_[RIGHT]+G_DOB*J_N*last_velocity_filtered_[RIGHT] - F_plus_right*K_TN/K_EN - D_plus_right*last_velocity_filtered_[RIGHT]*K_TN/K_EN;
-  //  }
-  //  else if (last_velocity_filtered_[RIGHT]<-VELOCITY_EPSILON){
-  //      reaction_torque_[RIGHT] = K_TN*current_filtered_[RIGHT]+G_DOB*J_N*last_velocity_filtered_[RIGHT] - F_minus_right*K_TN/K_EN - D_minus_right*last_velocity_filtered_[RIGHT]*K_TN/K_EN;
-  //  }
-  //  else {
-  reaction_torque_[RIGHT] = K_TN * current_filtered_[RIGHT] + G_DOB * J_N * last_velocity_filtered_[RIGHT];
-  //  }
-  reaction_torque_tmp_[LEFT] = G_DOB * step_time * reaction_torque_[LEFT] + (1 - G_DOB * step_time) * reaction_torque_tmp_[LEFT];
-  reaction_torque_tmp_[RIGHT] = G_DOB * step_time * reaction_torque_[RIGHT] + (1 - G_DOB * step_time) * reaction_torque_tmp_[RIGHT];
-  reaction_torque_filtered_[LEFT] = (reaction_torque_tmp_[LEFT] - G_DOB * J_N * last_velocity_filtered_[LEFT]);
-  reaction_torque_filtered_[RIGHT] = (reaction_torque_tmp_[RIGHT] - G_DOB * J_N * last_velocity_filtered_[RIGHT]);
-  reaction_torque_left.data = reaction_torque_filtered_[LEFT];
-  reaction_torque_right.data = reaction_torque_filtered_[RIGHT];
-
+  double current_time = millis();
+  const float pi = 3.1415;
+  double omega;
+  omega = 2*pi*0.0001;
+  
+  err_left = cmd_velocity_left - last_velocity_[LEFT];
+  err_right = cmd_velocity_right - last_velocity_[RIGHT];
+  err_int_left = err_int_left + err_left*step_time;
+  err_int_right = err_int_right + err_right*step_time;
+  err_der_left = (err_left - pre_err_left)/step_time;
+  err_der_right = (err_right - pre_err_right)/step_time;
+  cmd_acceleration_left = K_P*err_left+K_I*err_int_left+K_D*err_der_left;
+  cmd_acceleration_right = K_P*err_right+K_I*err_int_right+K_D*err_der_right;
+  pre_err_left = err_left;
+  pre_err_right = err_right;
   return true;
 }
 
-void updateReactionForce(void)
-{
-  mobile_robot_reaction_force = (reaction_torque_filtered_[LEFT] + reaction_torque_filtered_[RIGHT]) / WHEEL_RADIUS - M_R * WHEEL_RADIUS * (acc_filtered_[LEFT] + acc_filtered_[RIGHT]) / 2.0 ;
-  reaction_force.data = mobile_robot_reaction_force;
-}
-
 /*******************************************************************************
-  Calculate the joint states
+* Calculate the joint states
 *******************************************************************************/
 void updateJoint(void)
 {
@@ -781,7 +767,7 @@ void updateJoint(void)
 }
 
 /*******************************************************************************
-  Calculate the TF
+* Calculate the TF
 *******************************************************************************/
 void updateTF(geometry_msgs::TransformStamped& odom_tf)
 {
@@ -794,63 +780,16 @@ void updateTF(geometry_msgs::TransformStamped& odom_tf)
   odom_tf.transform.rotation = odom.pose.pose.orientation;
 }
 
-bool controlForce(double diff_time)
-{
-  double step_time;
-
-  step_time = 0.0;
-
-  step_time = diff_time;
-
-  if (step_time == 0)
-    return false;
-
-  static int16_t cnt = 0;           // timer counter
-
-  force_error = cmd_force - mobile_robot_reaction_force;
-  integral   = integral + (force_error * step_time);
-  derivative = (force_error - pre_error) / step_time;
-
-  if (cnt > 2000)
-  {
-    integral= 0.0;
-    cnt = 0;
-  }
-  else
-  {
-    cnt++;
-  }
-
-  control_output = p_gain * force_error + i_gain * integral  + d_gain * derivative;
-
-  if (control_output >= PWM_LIMIT)
-  {
-    control_output = PWM_LIMIT;
-  }
-  else if (control_output <= (-1) * PWM_LIMIT)
-  {
-    control_output = (-1) * PWM_LIMIT;
-  }
-
-  cmd_pwm_left = pwm_gain * control_output;
-  cmd_pwm_right = pwm_gain * control_output;
-
-  pre_error = force_error;
-
-  error.data = force_error;
-
-  return true;
-}
-
-
 /*******************************************************************************
-  Control motor pwm
+* Control motor pwm
 *******************************************************************************/
 void controlMotorPwm(void)
 {
-  goal_pwm_left = cmd_pwm_left + compensation_voltage_[LEFT] * 885 / 11.1 - K_EN * last_velocity_filtered_[LEFT];
-  goal_pwm_right = cmd_pwm_right + compensation_voltage_[RIGHT] * 885 / 11.1 - K_EN * last_velocity_filtered_[RIGHT];
-
+  cmd_current_left = J_N*cmd_acceleration_left/K_TN;
+  cmd_current_right = J_N*cmd_acceleration_right/K_TN;
+  goal_pwm_left = (int) ((cmd_current_left + compensation_current_[LEFT])*R_N*885/11.1);
+  goal_pwm_right = (int) ((cmd_current_right + compensation_current_[RIGHT])*R_N*885/11.1);
+     
   bool dxl_comm_result = false;
 
   if (goal_pwm_left >= PWM_LIMIT)
@@ -871,18 +810,18 @@ void controlMotorPwm(void)
     goal_pwm_right = (-1) * PWM_LIMIT;
   }
 
-  motor_voltage_[LEFT] = goal_pwm_left * 11.1 / 885;
-  motor_voltage_[RIGHT] = goal_pwm_right * 11.1 / 885;
+  motor_voltage_[LEFT] = goal_pwm_left * 11.1/885;
+  motor_voltage_[RIGHT] = goal_pwm_right * 11.1/885;
 
   motor_voltage_left.data = motor_voltage_[LEFT];
   motor_voltage_right.data = motor_voltage_[RIGHT];
-
+  
   dxl_comm_result = motor_driver.pwmControl((int64_t)goal_pwm_left, (int64_t)goal_pwm_right);
   if (dxl_comm_result == false)
     return;
 }
 /*******************************************************************************
-  Check voltage
+* Check voltage
 *******************************************************************************/
 float checkVoltage(void)
 {
@@ -894,13 +833,13 @@ float checkVoltage(void)
 }
 
 /*******************************************************************************
-  Show LED status
+* Show LED status
 *******************************************************************************/
 void showLedStatus(void)
 {
   static uint32_t t_time = millis();
 
-  if ((millis() - t_time) >= 500)
+  if ((millis()-t_time) >= 500)
   {
     t_time = millis();
     digitalWrite(13, !digitalRead(13));
@@ -934,7 +873,7 @@ void updateRxTxLed(void)
   static uint32_t rx_cnt;
   static uint32_t tx_cnt;
 
-  if ((millis() - tx_led_update_time) > 50)
+  if ((millis()-tx_led_update_time) > 50)
   {
     tx_led_update_time = millis();
 
@@ -950,7 +889,7 @@ void updateRxTxLed(void)
     tx_cnt = Serial.getTxCnt();
   }
 
-  if ((millis() - rx_led_update_time) > 50)
+  if ((millis()-rx_led_update_time) > 50)
   {
     rx_led_update_time = millis();
 
@@ -968,7 +907,7 @@ void updateRxTxLed(void)
 }
 
 /*******************************************************************************
-  Start Gyro Calibration
+* Start Gyro Calibration
 *******************************************************************************/
 void updateGyroCali(void)
 {
@@ -989,15 +928,15 @@ void updateGyroCali(void)
 
       t_time   = millis();
       pre_time = millis();
-      while (!imu.SEN.gyro_cali_get_done())
+      while(!imu.SEN.gyro_cali_get_done())
       {
         imu.update();
 
-        if (millis() - pre_time > 5000)
+        if (millis()-pre_time > 5000)
         {
           break;
         }
-        if (millis() - t_time > 100)
+        if (millis()-t_time > 100)
         {
           t_time = millis();
           setLedToggle(LED_ROS_CONNECT);
@@ -1016,7 +955,7 @@ void updateGyroCali(void)
 }
 
 /*******************************************************************************
-  updateVoltageCheck
+* updateVoltageCheck
 *******************************************************************************/
 void updateVoltageCheck(void)
 {
@@ -1040,13 +979,13 @@ void updateVoltageCheck(void)
   if (startup == false)
   {
     startup = true;
-    for (i = 0; i < 8; i++)
+    for (i=0; i<8; i++)
     {
       process_time[i] = millis();
     }
   }
 
-  if (millis() - process_time[0] > 100)
+  if (millis()-process_time[0] > 100)
   {
     process_time[0] = millis();
 
@@ -1056,11 +995,11 @@ void updateVoltageCheck(void)
     vol_index %= 10;
 
     vol_sum = 0;
-    for (i = 0; i < 10; i++)
+    for(i=0; i<10; i++)
     {
-      vol_sum += vol_value_tbl[i];
+        vol_sum += vol_value_tbl[i];
     }
-    vol_value = vol_sum / 10;
+    vol_value = vol_sum/10;
     battery_valtage_raw = vol_value;
 
     //Serial.println(vol_value);
@@ -1069,19 +1008,19 @@ void updateVoltageCheck(void)
   }
 
 
-  if (millis() - process_time[1] > 1000)
+  if(millis()-process_time[1] > 1000)
   {
     process_time[1] = millis();
 
     //Serial.println(battery_state);
 
-    switch (battery_state)
+    switch(battery_state)
     {
       case BATTERY_POWER_OFF:
         if (setup_end == true)
         {
           alram_state = 0;
-          if (battery_valtage_raw > 5.0)
+          if(battery_valtage_raw > 5.0)
           {
             check_index   = 0;
             prev_state    = battery_state;
@@ -1095,7 +1034,7 @@ void updateVoltageCheck(void)
         break;
 
       case BATTERY_POWER_STARTUP:
-        if (battery_valtage_raw > voltage_ref)
+        if(battery_valtage_raw > voltage_ref)
         {
           check_index   = 0;
           prev_state    = battery_state;
@@ -1103,7 +1042,7 @@ void updateVoltageCheck(void)
           setPowerOn();
         }
 
-        if (check_index < 5)
+        if(check_index < 5)
         {
           check_index++;
         }
@@ -1124,7 +1063,7 @@ void updateVoltageCheck(void)
 
       case BATTERY_POWER_NORMAL:
         alram_state = 0;
-        if (battery_valtage_raw < voltage_ref)
+        if(battery_valtage_raw < voltage_ref)
         {
           prev_state    = battery_state;
           battery_state = BATTERY_POWER_CHECK;
@@ -1133,20 +1072,20 @@ void updateVoltageCheck(void)
         break;
 
       case BATTERY_POWER_CHECK:
-        if (check_index < 5)
+        if(check_index < 5)
         {
           check_index++;
         }
         else
         {
-          if (battery_valtage_raw < voltage_ref_warn)
+          if(battery_valtage_raw < voltage_ref_warn)
           {
             setPowerOff();
             prev_state    = battery_state;
             battery_state = BATTERY_POWER_WARNNING;
           }
         }
-        if (battery_valtage_raw >= voltage_ref)
+        if(battery_valtage_raw >= voltage_ref)
         {
           setPowerOn();
           prev_state    = battery_state;
@@ -1156,12 +1095,12 @@ void updateVoltageCheck(void)
 
       case BATTERY_POWER_WARNNING:
         alram_state ^= 1;
-        if (alram_state)
+        if(alram_state)
         {
           tone(BDPIN_BUZZER, 1000, 500);
         }
 
-        if (battery_valtage_raw > voltage_ref)
+        if(battery_valtage_raw > voltage_ref)
         {
           setPowerOn();
           prev_state    = battery_state;
@@ -1172,7 +1111,7 @@ void updateVoltageCheck(void)
           setPowerOff();
         }
 
-        if (battery_valtage_raw < 5.0)
+        if(battery_valtage_raw < 5.0)
         {
           setPowerOff();
           prev_state    = battery_state;

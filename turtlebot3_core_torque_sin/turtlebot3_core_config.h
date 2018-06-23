@@ -21,7 +21,6 @@
 
 #include <math.h>
 
-
 #include <ros.h>
 #include <ros/time.h>
 #include <std_msgs/Int64.h>
@@ -41,13 +40,13 @@
 
 #include "turtlebot3_motor_driver.h"
 
-#define CONTROL_MOTOR_PWM_PERIOD       30   //hz
+#define CONTROL_MOTOR_PWM_PERIOD       100   //hz
 #define IMU_PUBLISH_PERIOD               200  //hz
 #define SENSOR_STATE_PUBLISH_PERIOD      30   //hz (initially 30)
-#define DRIVE_INFORMATION_PUBLISH_PERIOD 30   //hz (initially 30)
-#define CURRENT_PERIOD                   200  //hz
+#define DRIVE_INFORMATION_PUBLISH_PERIOD 100   //hz (initially 30) au 19 juin
 
 #define M_R                              1.0             // kg
+#define J_R                              0.0032
 #define WHEEL_RADIUS                     0.033           // meter
 #define WHEEL_SEPARATION                 0.160           // meter (BURGER : 0.160, WAFFLE : 0.287)
 #define TURNING_RADIUS                   0.080           // meter (BURGER : 0.080, WAFFLE : 0.1435)
@@ -75,44 +74,56 @@
 #define WAIT_SECOND                      1
 #define CHECK_BUTTON_RELEASED            2
 
-#define GDIFF                            10.0
+#define K_EN                             0.43
+#define K_TN                             0.43
+#define R_N                              8.7
+#define J_N                              0.01  
+
+#define GDIFF                            5.0
 #define GDIFF2                           5.0
 #define G_FILTER                         10.0
-#define G_DOB                            5.0
-#define K_EN                             1.7//0.006553
-#define K_TN                             0.30//0.8727//0.19
-#define R_N                              9.54545//8.3
-#define J_N                              0.01//0.087//0.0003 //0.000001175 //0.00001235
-#define TAU_CST                          0.12                   
+#define G_SENSOR                         1.0
+#define G_DOB                            5.0 //5 le 19 juin     
+#define G_ROBOT                          3.0        
 
-#define F_plus_left                     0.014274731
-#define D_plus_left                     -0.0204030112
-#define F_minus_left                    -0.0119349983
-#define D_minus_left                    -0.0235699064
-#define F_plus_right                    0.0267315332
-#define D_plus_right                    -0.031700967
-#define F_minus_right                   -0.0304814575
-#define D_minus_right                   -0.0278212661
-#define VELOCITY_EPSILON                 0.1
+#define F_plus_left                     0.019//0.0913729125
+#define D_plus_left                     0.058//0.3092316078
+#define F_minus_left                    -0.01//-0.0392929464
+#define D_minus_left                    0.063//0.3157354114
+#define F_plus_right                    0.00034//0.0913729125
+#define D_plus_right                    0.06//0.3092316078
+#define F_minus_right                   -0.016//-0.0392929464
+#define D_minus_right                   0.06//0.3157354114
+#define DISTURBANCE_EPSILON             0.1
+
+#define F_R                             0.0
+#define D_R                             0.0
+#define F_ROTATION                      0.0
+#define D_ROTATION                      0.0
+
+#define K_P                              1.0
+#define K_I                              100.0
+#define K_D                              0.0
 
 // Callback function prototypes
-void commandPwmLeftCallback(const std_msgs::Int64& cmd_pwm_msg);
-void commandPwmRightCallback(const std_msgs::Int64& cmd_pwm_msg);
+void commandVelocityLeftCallback(const std_msgs::Float64& cmd_velocity_msg);
+void commandVelocityRightCallback(const std_msgs::Float64& cmd_velocity_msg);
 
 // Function prototypes
 void publishImuMsg(void);
 void publishSensorStateMsg(void);
 void publishDriveInformation(void);
-void pubishCurrent(void);
+void publishSensorValue(void);
 bool updateOdometry(double diff_time);
-bool updateCurrent(double diff_time);
+bool updateSensorValue(double diff_time);
 bool updateDisturbanceTorque(double diff_time);
 bool updateReactionTorque(double diff_time);
-void updateReactionForce(void);
+bool updateReactionForce(double diff_time);
 void updateJoint(void);
 void updateTF(geometry_msgs::TransformStamped& odom_tf);
 void receiveRemoteControlData(void);
 void controlMotorPwm(void);
+bool controlAcceleration(double diff_time);
 uint8_t getButtonPress(void);
 void testDrive(void);
 void checkPushButtonState(void);
