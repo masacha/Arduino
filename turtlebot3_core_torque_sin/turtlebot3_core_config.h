@@ -40,10 +40,10 @@
 
 #include "turtlebot3_motor_driver.h"
 
-#define CONTROL_MOTOR_PWM_PERIOD       100   //hz
+#define CONTROL_MOTOR_PWM_PERIOD       2000   //hz
 #define IMU_PUBLISH_PERIOD               200  //hz
-#define SENSOR_STATE_PUBLISH_PERIOD      30   //hz (initially 30)
-#define DRIVE_INFORMATION_PUBLISH_PERIOD 100   //hz (initially 30) au 19 juin
+#define SENSOR_STATE_PUBLISH_PERIOD      2000   //hz (initially 30)
+#define DRIVE_INFORMATION_PUBLISH_PERIOD 2000   //hz (initially 30) au 19 juin
 
 #define M_R                              1.0             // kg
 #define J_R                              0.0032
@@ -80,11 +80,8 @@
 #define J_N                              0.01  
 
 #define GDIFF                            5.0
-#define GDIFF2                           5.0
-#define G_FILTER                         10.0
-#define G_SENSOR                         1.0
-#define G_DOB                            5.0 //5 le 19 juin     
-#define G_ROBOT                          3.0        
+#define G_DOB                            2.0 //5 le 19 juin     
+#define G_ROBOT                          2.0        
 
 #define F_plus_left                     0.019//0.0913729125
 #define D_plus_left                     0.058//0.3092316078
@@ -101,8 +98,8 @@
 #define F_ROTATION                      0.0
 #define D_ROTATION                      0.0
 
-#define K_P                              1.0
-#define K_I                              100.0
+#define K_P                              0.5
+#define K_I                              50.0
 #define K_D                              0.0
 
 // Callback function prototypes

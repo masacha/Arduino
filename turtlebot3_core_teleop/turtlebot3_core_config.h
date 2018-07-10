@@ -41,11 +41,11 @@
 #include "turtlebot3_motor_driver.h"
 
 #define CONTROL_MOTOR_PWM_PERIOD       2000   //hz
-#define IMU_PUBLISH_PERIOD               200  //hz
+#define IMU_PUBLISH_PERIOD               2000  //hz
 #define SENSOR_STATE_PUBLISH_PERIOD      2000   //hz (initially 30)
 #define DRIVE_INFORMATION_PUBLISH_PERIOD 2000   //hz (initially 30) au 19 juin
 
-#define M_R                              1.0             // kg
+#define M_R                              2.9             // kg
 #define J_R                              0.0032
 #define WHEEL_RADIUS                     0.033           // meter
 #define WHEEL_SEPARATION                 0.160           // meter (BURGER : 0.160, WAFFLE : 0.287)
@@ -83,31 +83,90 @@
 #define GDIFF2                           5.0
 #define G_FILTER                         10.0
 #define G_SENSOR                         1.0
-#define G_DOB                            4.0    
-#define G_ROBOT                          2.0        
+#define G_DOB                            5.0 //5 le 19 juin     
+#define G_ROBOT                          5.0        
 
-#define F_plus_left                     0.0081947167
-#define D_plus_left                     0.0571548305
-#define F_minus_left                    -0.0020166452
-#define D_minus_left                    0.058178594
-#define F_plus_right                    0.0090198407
-#define D_plus_right                    0.0557414881
-#define F_minus_right                   -0.008278781
-#define D_minus_right                   0.0580702967
-#define DISTURBANCE_EPSILON             0.001
+////Michelangelo
+//
+//#define F_plus_left                     0.0081947167
+//#define D_plus_left                     0.0571548305
+//#define F_minus_left                    -0.0020166452
+//#define D_minus_left                    0.058178594
+//#define F_plus_right                    0.0090198407
+//#define D_plus_right                    0.0557414881
+//#define F_minus_right                   -0.008278781
+//#define D_minus_right                   0.0580702967
 
-#define F_R                             0.0
-#define D_R                             0.0
+////Leonardo
+//
+#define F_plus_left                     0.0084444983
+#define D_plus_left                     0.0593937674
+#define F_minus_left                    -0.0022115394
+#define D_minus_left                    0.0589472749
+#define F_plus_right                    0.0035455454
+#define D_plus_right                    0.0554260693
+#define F_minus_right                   -0.007319097
+#define D_minus_right                   0.0580525313
+//
+////Raffaello
+//
+//#define F_plus_left                     0.0179987913
+//#define D_plus_left                     0.0642073513
+//#define F_minus_left                    -0.0154272237
+//#define D_minus_left                    0.0645520873
+//#define F_plus_right                    0.0043190721
+//#define D_plus_right                    0.0629798132
+//#define F_minus_right                   -0.0119467069
+//#define D_minus_right                   0.0654502417
+
+//#define F_plus_left                     0.01
+//#define D_plus_left                     0.06
+//#define F_minus_left                    -0.01
+//#define D_minus_left                    0.06
+//#define F_plus_right                    0.01
+//#define D_plus_right                    0.06
+//#define F_minus_right                   -0.01
+//#define D_minus_right                   0.06
+
+#define DISTURBANCE_EPSILON             0.01
+
+//Michelangelo
+
+//#define F_R_PLUS                        1.0008056201
+//#define D_R_PLUS                        19.2847888757
+//#define F_R_MINUS                       -1.6525873163
+//#define D_R_MINUS                       8.846454681
+
+////Leonardo
+//
+//#define F_R_PLUS                        1.5924009123
+//#define D_R_PLUS                        4.2426413845
+//#define F_R_MINUS                       -1.6321985306
+//#define D_R_MINUS                       1.4841853607
+//
+////Raffaello
+//
+//#define F_R_PLUS                        1.1421604911
+//#define D_R_PLUS                        6.8860187144
+//#define F_R_MINUS                       -1.5498677249
+//#define D_R_MINUS                       -0.0396616557
+
+#define F_R_PLUS                        3.25
+#define D_R_PLUS                        10.0
+#define F_R_MINUS                       -3.25
+#define D_R_MINUS                       10.0                
+
+#define RF_EPSILON                      0.5
+
 #define F_ROTATION                      0.0
 #define D_ROTATION                      0.0
 
 #define K_P                              0.5
-#define K_I                              50.0
-#define K_D                              0.0
+#define K_I                              30.0
+#define K_D                              0.00
 
 // Callback function prototypes
-void commandVelocityLeftCallback(const std_msgs::Float64& cmd_velocity_msg);
-void commandVelocityRightCallback(const std_msgs::Float64& cmd_velocity_msg);
+void commandVelocityCallback(const geometry_msgs::Twist& cmd_vel_msg);
 
 // Function prototypes
 void publishImuMsg(void);
